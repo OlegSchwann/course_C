@@ -12,12 +12,57 @@ ispunct() возвращают ненулевое значение.*/
 #include <stdio.h>
 #include <assert.h>
 
+char isspace(char letter){
+    return (letter == ' ') || (letter == ',');
+}
+
+char ispunct(char letter){
+    return (letter == '.') || (letter == '!') || (letter == '?');
+}
+
 int main() {
-    FILE *input_file = fopen("in_text.txt", "r");
+    char key_word[] = "world"; // ключевое слово
+    char entrance[100]; //Ячейки - сколько раз ключевое слово входит в предложение с этим номером.
+    int pos_in_key = 0, pos_in_entrance = 0; // буква, номер предложения на которых мы остановились.
+
+    FILE *input_file = fopen("in_text.txt", "r"); //открываем файл
     assert(input_file);//проверка, не равен ли указатель 0.
 
+    /*смысл:
+    берём букву
+    это пробел -
+        если совпадает с ключём-
+            прибавляем к вхождению в предложение 1
+            позиция ключа снова в 0
+    это знак пунктуации
+        если совпадает с ключём-
+            прибавляем к вхождению в предложение 1
+            позиция ключа снова в 0
+            номер предложения ++
+    это буква
+        совпадает с буквой ключа на нашей позиции
+            положение в ключе++
+        не совпадает с буквой ключа
+            положение в 0
+    */
+
     char letter = '\0';
-    while ((letter = getc(input_file)) != EOF)
+    while ((letter = getc(input_file)) != EOF){
         putc(letter, stdout);
+        if(ispunct(letter)){
+            printf("%d", entrance[pos_in_entrance]);
+            pos_in_entrance++;
+        }
+        if (key_word[pos_in_key] == letter) {
+            pos_in_key++;
+            if (pos_in_key == sizeof(key_word) - 1) {
+                putc('+', stdout);
+                entrance[pos_in_entrance]++;
+                pos_in_key = 0;
+            }
+        } else {
+            pos_in_key = 0;
+        }
+    }
     return 0;
 }
