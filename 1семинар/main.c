@@ -11,21 +11,47 @@ ispunct() возвращают ненулевое значение.*/
 
 #include <stdio.h>
 #include <assert.h>
+#include <memory.h>
+#include <stdlib.h>
 
 char isspace(char letter){
-    return (letter == ' ') || (letter == ',');
+    return (letter == ' ') || (letter == ',') || (letter == '\n');
 }
 
 char ispunct(char letter){
     return (letter == '.') || (letter == '!') || (letter == '?');
 }
 
-int main() {
-    char key_word[] = "world"; // ключевое слово
-    char entrance[100]; //Ячейки - сколько раз ключевое слово входит в предложение с этим номером.
+int compare (const void * elem1, const void * elem2)
+{
+    char f = *((char *)elem1);
+    char s = *((char *)elem2);
+    if (f > s) return  1;
+    if (f < s) return -1;
+    return 0;
+}
+
+int main(int argc, char *argv[]) { //аргументы командной строки - ключевое слово, путь до файла
+    assert(argc == 3); // проверяем наличие аргументов
+
+    //переносим из аргумента командной строки ключевое слово в новый массив
+    int key_len = strlen(argv[1])+1;
+    char key_word[key_len];
+    for(int i = 0; i < key_len; i++){
+        key_word[i] = argv[1][i];
+        assert(!isspace(key_word[i])); // проверяем, что в ключевом слове только буквы
+        assert(!ispunct(key_word[i]));
+    }
+    key_word[key_len-1] = '\0';
+
+    const int number_of_sentence = 100;
+    char entrance[number_of_sentence]; //Ячейки - сколько раз ключевое слово входит в предложение с этим номером.
+    for(int i = 0; i < number_of_sentence; i++){
+        entrance[i] = 0;
+    }
     int pos_in_key = 0, pos_in_entrance = 0; // буква, номер предложения на которых мы остановились.
 
-    FILE *input_file = fopen("in_text.txt", "r"); //открываем файл
+    FILE *input_file = fopen(argv[2], "r"); //открываем файл
     assert(input_file);//проверка, не равен ли указатель 0.
 
     /*смысл:
@@ -48,21 +74,44 @@ int main() {
 
     char letter = '\0';
     while ((letter = getc(input_file)) != EOF){
-        putc(letter, stdout);
         if(ispunct(letter)){
-            printf("%d", entrance[pos_in_entrance]);
-            pos_in_entrance++;
-        }
-        if (key_word[pos_in_key] == letter) {
-            pos_in_key++;
             if (pos_in_key == sizeof(key_word) - 1) {
                 putc('+', stdout);
                 entrance[pos_in_entrance]++;
                 pos_in_key = 0;
             }
-        } else {
+            printf("%d", entrance[pos_in_entrance]);
+            pos_in_entrance++;
+        } else if(isspace(letter)){
+            if (pos_in_key == sizeof(key_word) - 1) {
+                putc('+', stdout);
+                (entrance[pos_in_entrance]) = 1;
+                pos_in_key = 0;
+            }
+        } else if (key_word[pos_in_key] == letter) {
+            pos_in_key++;
+        } else { //если не совпадает, то пусть буква будет \0, что бы <префикс_ключ> не распознавались как <ключ>
             pos_in_key = 0;
         }
+        putc(letter, stdout);
+    }
+
+    /* Sort NMEMB elements of BASE, of SIZE bytes each,
+    using COMPAR to perform the comparisons.  */
+    qsort(entrance, pos_in_entrance, sizeof(entrance[0]), compare);
+
+    for(int i = 0; i < pos_in_entrance; i++){
+        printf("%d ", entrance[i]);
+    }
+    putc('\n', stdout);
+
+    if(pos_in_entrance % 2 == 0){ // чётное количество элементов
+        int midlle = (pos_in_entrance - 1) / 2;
+        float mediana = (entrance[midlle] + entrance[midlle+1]) / 2.0;
+        printf("медиана = %.2f", mediana);
+    } else {
+        float mediana = entrance[pos_in_entrance / 2];
+        printf("медиана = %.2f", mediana);
     }
     return 0;
 }
