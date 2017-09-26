@@ -13,6 +13,8 @@ ispunct() возвращают ненулевое значение.*/
 #include <assert.h>
 #include <memory.h>
 #include <stdlib.h>
+/*#include <ctype.h>*/
+
 
 char isspace(char letter){
     return (letter == ' ') || (letter == ',') || (letter == '\n');
@@ -31,6 +33,21 @@ int compare (const void * elem1, const void * elem2)
     return 0;
 }
 
+float megiana(char *entrance, int last_position){
+    /* Sort NMEMB elements of BASE, of SIZE bytes each,
+    using COMPAR to perform the comparisons.  */
+    qsort(entrance, last_position* sizeof(entrance[0]), sizeof(entrance[0]), compare);
+
+    if(last_position % 2 == 0){ // чётное количество элементов
+        int midlle = (last_position - 1) / 2;
+        float mediana = (entrance[midlle] + entrance[midlle+1]) / 2.0;
+        return mediana;
+    } else {
+        float mediana = entrance[last_position / 2];
+        return mediana;
+    }
+}
+
 int main(int argc, char *argv[]) { //аргументы командной строки - ключевое слово, путь до файла
     assert(argc == 3); // проверяем наличие аргументов
 
@@ -44,8 +61,8 @@ int main(int argc, char *argv[]) { //аргументы командной ст�
     }
     key_word[key_len-1] = '\0';
 
-    const int number_of_sentence = 100;
-    char entrance[number_of_sentence]; //Ячейки - сколько раз ключевое слово входит в предложение с этим номером.
+    int number_of_sentence = 1;
+    char *entrance = realloc(NULL, number_of_sentence * sizeof(char)); //Ячейки - сколько раз ключевое слово входит в предложение с этим номером.
     for(int i = 0; i < number_of_sentence; i++){
         entrance[i] = 0;
     }
@@ -82,6 +99,10 @@ int main(int argc, char *argv[]) { //аргументы командной ст�
             }
             printf("%d", entrance[pos_in_entrance]);
             pos_in_entrance++;
+            if(pos_in_entrance >= number_of_sentence){
+                number_of_sentence *= 2;
+                entrance = realloc(entrance, number_of_sentence * sizeof(entrance[0]));
+            };
         } else if(isspace(letter)){
             if (pos_in_key == sizeof(key_word) - 1) {
                 putc('+', stdout);
@@ -96,22 +117,11 @@ int main(int argc, char *argv[]) { //аргументы командной ст�
         putc(letter, stdout);
     }
 
-    /* Sort NMEMB elements of BASE, of SIZE bytes each,
-    using COMPAR to perform the comparisons.  */
-    qsort(entrance, pos_in_entrance, sizeof(entrance[0]), compare);
-
-    for(int i = 0; i < pos_in_entrance; i++){
+    /*for(int i = 0; i < pos_in_entrance; i++){
         printf("%d ", entrance[i]);
-    }
-    putc('\n', stdout);
+    }*/
 
-    if(pos_in_entrance % 2 == 0){ // чётное количество элементов
-        int midlle = (pos_in_entrance - 1) / 2;
-        float mediana = (entrance[midlle] + entrance[midlle+1]) / 2.0;
-        printf("медиана = %.2f", mediana);
-    } else {
-        float mediana = entrance[pos_in_entrance / 2];
-        printf("медиана = %.2f", mediana);
-    }
+    printf("\nмедиана вхождения слова %s = %.2f", key_word, megiana(entrance, pos_in_entrance));
+
     return 0;
 }
