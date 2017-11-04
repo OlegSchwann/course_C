@@ -30,16 +30,39 @@
  */
 
 //шаблон. Это значит, что все функции с недоопределёнными типами надо реализовать в header.
-template < typename Stored, int InitialCapacity = 1000 >
+template < typename Stored>
 class Deque {
 public:
     // конструкторы:
-    Deque(){ //просто создаёт пустой массив, устанавливает все указатели
+    Deque(int InitialCapacity = 1024){ //просто создаёт пустой массив, устанавливает все указатели
         beginning_of_buffer = new Stored[InitialCapacity];
         end_of_buffer = beginning_of_buffer + InitialCapacity - 1;
         head_of_ring = beginning_of_buffer + InitialCapacity/2;
         tail_of_ring = beginning_of_buffer + InitialCapacity/2 +1;
         // -----<>-----
+    };
+
+    //конструктор копирования
+    //важно скопировать не только массив, но и вызвать конструкторы копирования для каждого
+    //объекта в этом массиве. Но для формируемого массива elongate() вызываться не должен
+    Deque(const Deque &old_deque){
+        // размер нового на 10% больше задейсвованного размера старого
+        size_t InitialCapacity = (
+            old_deque.head_of_ring < old_deque.tail_of_ring?
+            // --<====>-----
+            size_t((old_deque.tail_of_ring - old_deque.head_of_ring)*1.1):
+            // ==>-----<====
+            size_t((old_deque.end_of_buffer - old_deque.head_of_ring +
+            old_deque.tail_of_ring - old_deque.beginning_of_buffer)*1.1));
+        this->beginning_of_buffer = new Stored[InitialCapacity];
+        this->end_of_buffer = beginning_of_buffer + InitialCapacity - 1;
+        this->head_of_ring = beginning_of_buffer + InitialCapacity/2;
+        this->tail_of_ring = beginning_of_buffer + InitialCapacity/2 +1;
+        //осталось только перенести элементы, вызывая конструкторы копирования
+        //для внутри лежащих элементов.
+        for(Stored& i : old_deque) {
+            this->push_back(i);
+        }
     };
 
     //деструктор
@@ -141,7 +164,59 @@ public:
             }
         }
     };
-    // ^ минимальная функциональность, начнём с неё
+public:
+    //теперь я хочу переопределить итерацию range based for
+    class DequeIterator{ // итератор маскируется под указатель.
+        //ведёт себя как Stored *обычный_указатель, но перескакивает с конца массива на начало, зацикливаясь.
+    protected:
+        Stored *current_value;
+        Stored *beginning_of_buffer;
+        Stored *end_of_buffer;
+    public:
+        //конструктор просто запоняет три поля.
+        DequeIterator(
+            Stored *current_value,
+            Stored *beginning_of_buffer,
+            Stored *end_of_buffer):
+            current_value(current_value),
+            beginning_of_buffer(beginning_of_buffer),
+            end_of_buffer(end_of_buffer){
+        };
+
+        Stored& operator*() {
+            return *current_value;
+        }
+        DequeIterator& operator++() {
+            current_value++;
+            if(current_value > end_of_buffer){
+                current_value = beginning_of_buffer;
+            }
+            return *this;
+        }
+        bool operator!=(const DequeIterator& it) const {
+            return current_value != it.current_value;
+        }
+    };
+    //методы возвращают итераторы на начало и конец соответственно
+    DequeIterator begin() {
+        Stored *first = // возвращаем указатель на первый реально существующий элемент
+            (head_of_ring == end_of_buffer?
+            //≡===>----<
+            beginning_of_buffer:
+            //--<≡===>--
+            head_of_ring + 1);
+        return DequeIterator(
+            first,
+            beginning_of_buffer,
+            end_of_buffer);
+    }
+    DequeIterator end() {
+        //возвращаем указатель на следующий за последним элемент
+        return DequeIterator(
+                tail_of_ring,
+                beginning_of_buffer,
+                end_of_buffer);
+    }
 
 private:
 
